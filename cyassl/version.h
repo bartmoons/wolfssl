@@ -1,4 +1,4 @@
-/* cyassl/version.h
+/* cyassl_version.h.in
  *
  * Copyright (C) 2006-2015 wolfSSL Inc.
  *
@@ -19,8 +19,4 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
  */
 
-#include <wolfssl/version.h>
-
-#define LIBCYASSL_VERSION_STRING LIBWOLFSSL_VERSION_STRING
-#define LIBCYASSL_VERSION_HEX LIBWOLFSSL_VERSION_HEX
-
+#include <wolfssl/version.h.in>

@@ -344,7 +344,7 @@ int wolfSSL_dtls_get_peer(WOLFSSL* ssl, void* peer, unsigned int* peerSz)
     return SSL_NOT_IMPLEMENTED;
 #endif
 }
-#endif /* CYASSL_LEANPSK */
+#endif /* WOLFSSL_LEANPSK */
 
 
 /* return underlyig connect or accept, SSL_SUCCESS on ok */
@@ -696,7 +696,7 @@ int wolfSSL_CTX_UseMaxFragment(WOLFSSL_CTX* ctx, byte mfl)
 
     return TLSX_UseMaxFragment(&ctx->extensions, mfl);
 }
-#endif /* NO_CYASSL_CLIENT */
+#endif /* NO_WOLFSSL_CLIENT */
 #endif /* HAVE_MAX_FRAGMENT */
 
 #ifdef HAVE_TRUNCATED_HMAC
@@ -716,7 +716,7 @@ int wolfSSL_CTX_UseTruncatedHMAC(WOLFSSL_CTX* ctx)
 
     return TLSX_UseTruncatedHMAC(&ctx->extensions);
 }
-#endif /* NO_CYASSL_CLIENT */
+#endif /* NO_WOLFSSL_CLIENT */
 #endif /* HAVE_TRUNCATED_HMAC */
 
 /* Elliptic Curves */
@@ -3580,7 +3580,7 @@ int wolfSSL_CTX_der_load_verify_locations(WOLFSSL_CTX* ctx, const char* file,
     return SSL_FAILURE;
 }
 
-#endif /* CYASSL_DER_LOAD */
+#endif /* WOLFSSL_DER_LOAD */
 
 
 #ifdef WOLFSSL_CERT_GEN
@@ -3665,7 +3665,7 @@ int wolfSSL_PemCertToDer(const char* fileName, unsigned char* derBuf, int derSz)
     return ret;
 }
 
-#endif /* CYASSL_CERT_GEN */
+#endif /* WOLFSSL_CERT_GEN */
 
 
 int wolfSSL_CTX_use_certificate_file(WOLFSSL_CTX* ctx, const char* file,
@@ -4170,7 +4170,7 @@ typedef struct {
     int version;     /* cache layout version id */
     int rows;        /* session rows */
     int columns;     /* session columns */
-    int sessionSz;   /* sizeof CYASSL_SESSION */
+    int sessionSz;   /* sizeof WOLFSSL_SESSION */
 } cache_header_t;
 
 /* current persistence layout is:
@@ -4179,7 +4179,7 @@ typedef struct {
    2) SessionCache
    3) ClientCache
 
-   update CYASSL_CACHE_VERSION if change layout for the following
+   update WOLFSSL_CACHE_VERSION if change layout for the following
    PERSISTENT_SESSION_CACHE functions 
 */
 
@@ -4507,7 +4507,7 @@ typedef struct {
    1) CertCacheHeader
    2) caTable
 
-   update CYASSL_CERT_CACHE_VERSION if change layout for the following
+   update WOLFSSL_CERT_CACHE_VERSION if change layout for the following
    PERSIST_CERT_CACHE functions
 */
 
@@ -5203,7 +5203,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
             return -500;
 
         case HELLO_AGAIN_REPLY :
-            #ifdef CYASSL_DTLS
+            #ifdef WOLFSSL_DTLS
                 if (ssl->options.dtls) {
                     neededState = ssl->options.resuming ?
                            SERVER_FINISHED_COMPLETE : SERVER_HELLODONE_COMPLETE;
@@ -5255,14 +5255,14 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
                 
             #endif
             ssl->options.connectState = FIRST_REPLY_FIRST;
-            CYASSL_MSG("connect state: FIRST_REPLY_FIRST");
+            WOLFSSL_MSG("connect state: FIRST_REPLY_FIRST");
             //return -500; // Floris: allow time for the server to reply...
 
         case FIRST_REPLY_FIRST :
 	    WOLFSSL_MSG("connect state: FIRST_REPLY_DONE");
       // Floris: we should somehow delay the CKE after the SHD?
       /*if (ssl->options.serverState < SERVER_HELLODONE_COMPLETE) {
-        CYASSL_MSG("FLORIS: delaying ClientKeyExchange untill Server Hello Down received");
+        WOLFSSL_MSG("FLORIS: delaying ClientKeyExchange untill Server Hello Down received");
         printf("serverState = %d < SERVERHELLO_DONE=%d\n", ssl->options.serverState, SERVER_HELLODONE_COMPLETE);
         return -500;
       }*/
@@ -5280,11 +5280,11 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
             }
 
             ssl->options.connectState = FIRST_REPLY_SECOND;
-            CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
+            WOLFSSL_MSG("connect state: FIRST_REPLY_SECOND");
 	    //return -500;
 
         case FIRST_REPLY_SECOND :
-            CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
+            WOLFSSL_MSG("connect state: FIRST_REPLY_SECOND");
             #ifndef NO_CERTS
                 if (ssl->options.sendVerify) {
                     if ( (ssl->error = SendCertificateVerify(ssl)) != 0) {
@@ -5298,7 +5298,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
             WOLFSSL_MSG("connect state: FIRST_REPLY_THIRD");
 
         case FIRST_REPLY_THIRD :
-        		CYASSL_MSG("connect state: FIRST_REPLY_THIRD");
+        		WOLFSSL_MSG("connect state: FIRST_REPLY_THIRD");
             if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
                 WOLFSSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
@@ -5309,7 +5309,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
 	    //return -400;
 
         case FIRST_REPLY_FOURTH :
-            CYASSL_MSG("connect state: FIRST_REPLY_FOURTH");
+            WOLFSSL_MSG("connect state: FIRST_REPLY_FOURTH");
             if ( (ssl->error = SendFinished(ssl)) != 0) {
                 WOLFSSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
@@ -5323,12 +5323,12 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
 //            /* get response */
 //            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE)
 //                if ( (ssl->error = ProcessReply(ssl)) < 0) {
-//                    CYASSL_ERROR(ssl->error);
+//                    WOLFSSL_ERROR(ssl->error);
 //                    return SSL_FATAL_ERROR;
 //                }
 //          
 //            ssl->options.connectState = SECOND_REPLY_DONE;
-//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//            WOLFSSL_MSG("connect state: SECOND_REPLY_DONE");
 
         case FINISHED_DONE :
             /* get response */
@@ -5363,12 +5363,12 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
 // Tom added a new state here, might give errors. Removing and seeing what
 // happens...
 //        case FINISHED_DONE :
-//            CYASSL_MSG("connect state: FINISHED_DONE");
+//            WOLFSSL_MSG("connect state: FINISHED_DONE");
 //            /* get response */
 //            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE) {
 //		int err = ssl->error = ProcessReply(ssl);             
 //		if ( (err) < 0) {
-//                    CYASSL_ERROR(ssl->error);
+//                    WOLFSSL_ERROR(ssl->error);
 //                    return SSL_FATAL_ERROR;
 //                } else if (err == 0){
 //			if (ssl->options.connectState != 31) { // Tom extra state
@@ -5380,25 +5380,25 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
 //                }
 //            }
 //            ssl->options.connectState = SECOND_REPLY_DONE;
-//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//            WOLFSSL_MSG("connect state: SECOND_REPLY_DONE");
 //	case 31: // extra state Tom
 //	    while (ssl->options.serverState < SERVER_FINISHED_COMPLETE) {
 //		int err = ssl->error = ProcessReply(ssl);             
 //		if ( (err) < 0) {
-//		    CYASSL_ERROR(ssl->error);
+//		    WOLFSSL_ERROR(ssl->error);
 //		    return SSL_FATAL_ERROR;
 //		} else if (err == 0){
 //			break;
 //		}
 //            }
 //            ssl->options.connectState = SECOND_REPLY_DONE;
-//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//            WOLFSSL_MSG("connect state: SECOND_REPLY_DONE");
 //
 //        case SECOND_REPLY_DONE:
-//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//            WOLFSSL_MSG("connect state: SECOND_REPLY_DONE");
 //            FreeHandshakeResources(ssl);
-//            CYASSL_LEAVE("SSL_connect()", SSL_SUCCESS);
-//	    CYASSL_MSG("HANDSHAKE COMPLETED SUCCESSFULLY");
+//            WOLFSSL_LEAVE("SSL_connect()", SSL_SUCCESS);
+//	    WOLFSSL_MSG("HANDSHAKE COMPLETED SUCCESSFULLY");
 //            return SSL_SUCCESS;
 
         default:
@@ -5407,7 +5407,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
         }
     }
 
-#endif /* NO_CYASSL_CLIENT */
+#endif /* NO_WOLFSSL_CLIENT */
 
 
 /* server only parts */
@@ -5665,7 +5665,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
                       // only return control to Click if we need a new packet (i.e. when CLIENT_FINISHED hasn't been received yet)
                       // in the other case (i.e. CLIENT_FINISHED has been received and processed by CyaSSL) CyaSSL should continue and send its ChangeCipherSpec
                       if (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)  {
-                        CYASSL_MSG("CyaSSL_accept (SERVER_HELLO_DONE): returning -500");
+                        WOLFSSL_MSG("CyaSSL_accept (SERVER_HELLO_DONE): returning -500");
                         /*printf("acceptState = %d (SERVER_HELLO_DONE), clientState < CLIENT_FINISHED_COMPLETE: %d < %d\n", ssl->options.acceptState, ssl->options.clientState, CLIENT_FINISHED_COMPLETE);*/
                         return -500;
                       }
@@ -5681,7 +5681,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
                 return SSL_FATAL_ERROR;
             }
             ssl->options.acceptState = CHANGE_CIPHER_SENT;
-            CYASSL_MSG("accept state  CHANGE_CIPHER_SENT");
+            WOLFSSL_MSG("accept state  CHANGE_CIPHER_SENT");
         //    return -500;
 						
 
@@ -5719,7 +5719,7 @@ int wolfSSL_dtls_got_timeout(WOLFSSL* ssl)
         }
     }
 
-#endif /* NO_CYASSL_SERVER */
+#endif /* NO_WOLFSSL_SERVER */
 
 
 int wolfSSL_Cleanup(void)
@@ -6563,7 +6563,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
 
 #endif
 
-#endif /* CYASSL_CALLBACKS */
+#endif /* WOLFSSL_CALLBACKS */
 
 
 #ifndef NO_PSK
@@ -7572,7 +7572,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         /* OpenSSL compat, no error */
     }
 
-    #endif /* CYASSL_SHA384 */
+    #endif /* WOLFSSL_SHA384 */
 
 
    #ifdef WOLFSSL_SHA512
@@ -7603,7 +7603,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         /* OpenSSL compat, no error */
     }
 
-    #endif /* CYASSL_SHA512 */
+    #endif /* WOLFSSL_SHA512 */
 
 
     #ifndef NO_MD5
@@ -7642,7 +7642,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         return type;
     }
 
-    #endif /* CYASSL_SHA384 */
+    #endif /* WOLFSSL_SHA384 */
 
     #ifdef WOLFSSL_SHA512
 
@@ -7653,7 +7653,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         return type;
     }
 
-    #endif /* CYASSL_SHA512 */
+    #endif /* WOLFSSL_SHA512 */
 
 
     void wolfSSL_EVP_MD_CTX_init(WOLFSSL_EVP_MD_CTX* ctx)
@@ -9070,7 +9070,7 @@ byte* wolfSSL_X509_get_hw_serial_number(WOLFSSL_X509* x509,byte* in,int* inOutSz
     return in;
 }
 
-#endif /* CYASSL_SEP */
+#endif /* WOLFSSL_SEP */
 
 
 WOLFSSL_X509* wolfSSL_X509_d2i(WOLFSSL_X509** x509, const byte* in, int len)

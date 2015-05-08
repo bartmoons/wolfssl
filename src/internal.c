@@ -212,7 +212,7 @@ static INLINE void c32to48(word32 in, byte out[6])
     out[5] =  in & 0xff;
 }
 
-#endif /* CYASSL_DTLS */
+#endif /* WOLFSSL_DTLS */
 
 
 /* convert 16 bit integer to opaque */
@@ -258,7 +258,7 @@ static INLINE void ato32(const byte* c, word32* u32)
     *u32 = (c[0] << 24) | (c[1] << 16) | (c[2] << 8) | c[3];
 }
 
-#endif /* CYASSL_DTLS */
+#endif /* WOLFSSL_DTLS */
 
 
 #ifdef HAVE_LIBZ
@@ -2020,7 +2020,7 @@ void DtlsPoolReset(WOLFSSL* ssl)
 
 int DtlsPoolTimeout(WOLFSSL* ssl)
 {
-  CYASSL_ENTER("DtlsPoolTimeout");
+  WOLFSSL_ENTER("DtlsPoolTimeout");
     int result = -1;
     if (ssl->dtls_timeout <  ssl->dtls_timeout_max) {
         ssl->dtls_timeout *= DTLS_TIMEOUT_MULTIPLIER;
@@ -2032,7 +2032,7 @@ int DtlsPoolTimeout(WOLFSSL* ssl)
 
 int DtlsPoolSend(WOLFSSL* ssl)
 {
-  CYASSL_ENTER("DtlsPoolSend");
+  WOLFSSL_ENTER("DtlsPoolSend");
     int ret;
     DtlsPool *pool = ssl->dtls_pool;
 
@@ -2237,7 +2237,7 @@ DtlsMsg* DtlsMsgInsert(DtlsMsg* head, DtlsMsg* item)
     return head;
 }
 
-#endif /* CYASSL_DTLS */
+#endif /* WOLFSSL_DTLS */
 
 #ifndef NO_OLD_TLS
 
@@ -2273,7 +2273,7 @@ ProtocolVersion MakeDTLSv1_2(void)
     return pv;
 }
 
-#endif /* CYASSL_DTLS */
+#endif /* WOLFSSL_DTLS */
 
 
 
@@ -4902,7 +4902,7 @@ static int DoHandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                 AddLateName("ServerHelloDone", &ssl->timeoutInfo);
         #endif
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
-        CYASSL_MSG("ssl->options.serverState = SERVER_HELLODONE_COMPLETE");
+        WOLFSSL_MSG("ssl->options.serverState = SERVER_HELLODONE_COMPLETE");
 
         if (ssl->keys.encryptionOn) {
             *inOutIdx += ssl->keys.padSz;
@@ -4932,7 +4932,7 @@ static int DoHandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
         break;
 #endif /* !NO_RSA || HAVE_ECC */
 
-#endif /* !NO_CYASSL_SERVER */
+#endif /* !NO_WOLFSSL_SERVER */
 
     default:
         WOLFSSL_MSG("Unknown handshake message type");
@@ -6345,7 +6345,7 @@ int ProcessReply(WOLFSSL* ssl)
     for (;;) {
         switch (ssl->options.processReply) {
 
-        /* in the CYASSL_SERVER case, get the first byte for detecting 
+        /* in the WOLFSSL_SERVER case, get the first byte for detecting 
          * old client hello */
         case doProcessInit:
             
@@ -6409,7 +6409,7 @@ int ProcessReply(WOLFSSL* ssl)
                 continue;
             }
 
-        /* in the CYASSL_SERVER case, run the old client hello */
+        /* in the WOLFSSL_SERVER case, run the old client hello */
         case runProcessOldClientHello:     
 
             /* get sz bytes or return error */
@@ -6424,7 +6424,7 @@ int ProcessReply(WOLFSSL* ssl)
                 if (used < ssl->curSize)
                     if ((ret = GetInputData(ssl, ssl->curSize)) < 0)
                         return ret;
-            #endif  /* CYASSL_DTLS */
+            #endif  /* WOLFSSL_DTLS */
             }
 
             ret = ProcessOldClientHello(ssl, ssl->buffers.inputBuffer.buffer,
@@ -6441,7 +6441,7 @@ int ProcessReply(WOLFSSL* ssl)
                 return 0;
             }
 
-#endif  /* NO_CYASSL_SERVER */
+#endif  /* NO_WOLFSSL_SERVER */
 
         /* get the record layer header */
         case getRecordLayerHeader:
@@ -6641,7 +6641,7 @@ int ProcessReply(WOLFSSL* ssl)
                             if ( (ret = InitStreams(ssl)) != 0)
                                 return ret;
                     #endif
-                    CYASSL_MSG("start building finished msg");
+                    WOLFSSL_MSG("start building finished msg");
                     ret = BuildFinished(ssl, &ssl->hsHashes->verifyHashes,
                                        ssl->options.side == WOLFSSL_CLIENT_END ?
                                        server : client);
@@ -6672,7 +6672,7 @@ int ProcessReply(WOLFSSL* ssl)
 
                     /* catch warnings that are handled as errors */
                     if (type == close_notify) {
-												CYASSL_MSG("got CloseNotify message!");
+												WOLFSSL_MSG("got CloseNotify message!");
                         return ssl->error = ZERO_RETURN;
                     }
 
@@ -6689,7 +6689,7 @@ int ProcessReply(WOLFSSL* ssl)
 
     // Tom
 		if (ssl->options.connectState == 31 && ssl->curRL.type == handshake) {
-		  CYASSL_MSG("RETURN 0");	
+		  WOLFSSL_MSG("RETURN 0");	
 		  return 0; // handshake completed
 		}		
 
@@ -6971,7 +6971,7 @@ static int BuildCertHashes(WOLFSSL* ssl, Hashes* hashes)
     return 0;
 }
 
-#endif /* CYASSL_LEANPSK */
+#endif /* WOLFSSL_LEANPSK */
 
 /* Build SSL Message, encrypted */
 static int BuildMessage(WOLFSSL* ssl, byte* output, int outSz,
@@ -9081,7 +9081,7 @@ static void PickHashSigAlgo(WOLFSSL* ssl,
         }
     }
 
-#endif /* CYASSL_CALLBACKS */
+#endif /* WOLFSSL_CALLBACKS */
 
 
 
@@ -9489,7 +9489,7 @@ static void PickHashSigAlgo(WOLFSSL* ssl,
         }
 
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
-        CYASSL_MSG("DoServerHello() set serverState to SERVER_HELLO_COMPLETE"); // Floris
+        WOLFSSL_MSG("DoServerHello() set serverState to SERVER_HELLO_COMPLETE"); // Floris
 
         if (ssl->keys.encryptionOn) {
             *inOutIdx += ssl->keys.padSz;
@@ -9521,7 +9521,7 @@ static void PickHashSigAlgo(WOLFSSL* ssl,
                             if (!ssl->options.tls)
                                 ret = DeriveKeys(ssl);
                     #endif
-                    CYASSL_MSG("DoServerHello() set serverState to SERVER_HELLODONE_COMPLETE"); // Floris
+                    WOLFSSL_MSG("DoServerHello() set serverState to SERVER_HELLODONE_COMPLETE"); // Floris
                     ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
                     return ret;
                 }
