@@ -6799,6 +6799,12 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
     }
 #endif
 
+    int wolfSSL_get_server_state(WOLFSSL* ssl)
+    {
+
+      return ssl->options.serverState;
+    }
+
     /* return true if connection established */
     int wolfSSL_is_init_finished(WOLFSSL* ssl)
     {

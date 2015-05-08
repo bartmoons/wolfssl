@@ -10,6 +10,8 @@
 #include <wolfssl/wolfcrypt/types.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
 #include <wolfssl/wolfcrypt/random.h>
+#include <errno.h>
+#include <arpa/inet.h>
 
 #ifdef ATOMIC_USER
     #include <wolfssl/wolfcrypt/aes.h>
@@ -401,7 +403,11 @@ static INLINE void build_addr(SOCKADDR_IN_T* addr, const char* peer,
 
 #ifndef TEST_IPV6
     /* peer could be in human readable form */
-    if ( (peer != INADDR_ANY) && isalpha((int)peer[0])) {
+    //if ( (peer != INADDR_ANY) && isalpha((int)peer[0])) {
+    // possible solution...
+    in_addr_t peer_addr;
+    inet_pton(AF_INET, peer, &peer_addr);
+    if ( (peer_addr != INADDR_ANY) && isalpha((int)peer[0])) {
         #ifdef WOLFSSL_MDK_ARM
             int err;
             struct hostent* entry = gethostbyname(peer, &err);
@@ -427,7 +433,8 @@ static INLINE void build_addr(SOCKADDR_IN_T* addr, const char* peer,
         addr->sin_family = AF_INET_V;
     #endif
     addr->sin_port = htons(port);
-    if (peer == INADDR_ANY)
+    //if (peer == INADDR_ANY)
+    if (peer_addr == INADDR_ANY)
         addr->sin_addr.s_addr = INADDR_ANY;
     else {
         if (!useLookup)
@@ -436,7 +443,10 @@ static INLINE void build_addr(SOCKADDR_IN_T* addr, const char* peer,
 #else
     addr->sin6_family = AF_INET_V;
     addr->sin6_port = htons(port);
-    if (peer == INADDR_ANY)
+    in_addr_t peer_addr;
+    inet_pton(AF_INET, peer, &peer_addr);
+    //if (peer == INADDR_ANY)
+    if (peer_addr == INADDR_ANY)
         addr->sin6_addr = in6addr_any;
     else {
         #ifdef HAVE_GETADDRINFO
@@ -585,7 +595,8 @@ static INLINE void tcp_listen(SOCKET_T* sockfd, word16* port, int useAnyAddr,
 
     /* don't use INADDR_ANY by default, firewall may block, make user switch
        on */
-    build_addr(&addr, (useAnyAddr ? INADDR_ANY : wolfSSLIP), *port, udp);
+    //build_addr(&addr, (useAnyAddr ? INADDR_ANY : wolfSSLIP), *port, udp);
+    build_addr(&addr, (useAnyAddr ? "0.0.0.0" : wolfSSLIP), *port, udp);
     tcp_socket(sockfd, udp);
 
 #if !defined(USE_WINDOWS_API) && !defined(WOLFSSL_MDK_ARM)
@@ -645,7 +656,8 @@ static INLINE void udp_accept(SOCKET_T* sockfd, SOCKET_T* clientfd,
     SOCKADDR_IN_T addr;
 
     (void)args;
-    build_addr(&addr, (useAnyAddr ? INADDR_ANY : wolfSSLIP), port, 1);
+    //build_addr(&addr, (useAnyAddr ? INADDR_ANY : wolfSSLIP), port, 1);
+    build_addr(&addr, (useAnyAddr ? "0.0.0.0" : wolfSSLIP), port, 1);
     tcp_socket(sockfd, 1);
 
 
