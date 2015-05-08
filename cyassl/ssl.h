@@ -317,6 +317,7 @@ CYASSL_API int  CyaSSL_set_session_id_context(CYASSL*, const unsigned char*,
                                            unsigned int);
 CYASSL_API void CyaSSL_set_connect_state(CYASSL*);
 CYASSL_API void CyaSSL_set_accept_state(CYASSL*);
+CYASSL_API int  CyaSSL_get_server_state(CYASSL* ssl);
 CYASSL_API int  CyaSSL_session_reused(CYASSL*);
 CYASSL_API void CyaSSL_SESSION_free(CYASSL_SESSION* session);
 CYASSL_API int  CyaSSL_is_init_finished(CYASSL*);

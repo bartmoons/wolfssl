@@ -18,7 +18,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
-
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -71,6 +70,9 @@
         #include "vfile.h"
     #endif
 #endif /* NO_FILESYSTEM */
+
+// Floris
+#include <unistd.h>
 
 #ifndef TRUE
     #define TRUE  1
@@ -250,6 +252,7 @@ int CyaSSL_dtls(CYASSL* ssl)
 
 int CyaSSL_dtls_set_peer(CYASSL* ssl, void* peer, unsigned int peerSz)
 {
+		CYASSL_ENTER("CyaSSL_dtls_set_peer");
 #ifdef CYASSL_DTLS
     void* sa = (void*)XMALLOC(peerSz, ssl->heap, DYNAMIC_TYPE_SOCKADDR);
     if (sa != NULL) {
@@ -269,6 +272,7 @@ int CyaSSL_dtls_set_peer(CYASSL* ssl, void* peer, unsigned int peerSz)
 
 int CyaSSL_dtls_get_peer(CYASSL* ssl, void* peer, unsigned int* peerSz)
 {
+		CYASSL_ENTER("CyaSSL_dtls_get_peer");
 #ifdef CYASSL_DTLS
     if (peer != NULL && peerSz != NULL 
             && *peerSz >= ssl->buffers.dtlsCtx.peer.sz) {
@@ -468,8 +472,9 @@ static int CyaSSL_read_internal(CYASSL* ssl, void* data, int sz, int peek)
 #endif
 
     CYASSL_LEAVE("CyaSSL_read_internal()", ret);
-
-    if (ret < 0)
+		if (ret == -500)
+				return ret;
+    else if (ret < 0)
         return SSL_FATAL_ERROR;
     else
         return ret;
@@ -4007,10 +4012,11 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
                 return SSL_FATAL_ERROR;
             }
         }
-
+				CYASSL_MSG("CYASSL STARTING SWITCH STRUCTURE");
         switch (ssl->options.connectState) {
-
+				
         case CONNECT_BEGIN :
+        		CYASSL_MSG("connect state: trying to send client hello");
             /* always send client hello first */
             if ( (ssl->error = SendClientHello(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
@@ -4018,8 +4024,10 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             }
             ssl->options.connectState = CLIENT_HELLO_SENT;
             CYASSL_MSG("connect state: CLIENT_HELLO_SENT");
+            return -500;
 
         case CLIENT_HELLO_SENT :
+        		CYASSL_MSG("case CLIENT_HELLO_SENT");
             neededState = ssl->options.resuming ? SERVER_FINISHED_COMPLETE :
                                           SERVER_HELLODONE_COMPLETE;
             #ifdef CYASSL_DTLS
@@ -4049,6 +4057,7 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             CYASSL_MSG("connect state: HELLO_AGAIN");
 
         case HELLO_AGAIN :
+            CYASSL_MSG("case HELLO_AGAIN");
             if (ssl->options.certOnly)
                 return SSL_SUCCESS;
 
@@ -4076,8 +4085,10 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
 
             ssl->options.connectState = HELLO_AGAIN_REPLY;
             CYASSL_MSG("connect state: HELLO_AGAIN_REPLY");
+            return -500;
 
         case HELLO_AGAIN_REPLY :
+        		CYASSL_MSG("case HELLO_AGAIN_REPLY");
             #ifdef CYASSL_DTLS
                 if (ssl->options.dtls) {
                     neededState = ssl->options.resuming ?
@@ -4085,14 +4096,31 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             
                     /* get response */
                     while (ssl->options.serverState < neededState) {
+                    CYASSL_MSG("HELLO_AGAIN_REPLY while");
+                      /*fprintf(stderr, "%d %d\n", ssl->options.serverState, neededState);*/
                         if ( (ssl->error = ProcessReply(ssl)) < 0) {
                                 CYASSL_ERROR(ssl->error);
                                 return SSL_FATAL_ERROR;
                         }
                         /* if resumption failed, reset needed state */
-                        else if (neededState == SERVER_FINISHED_COMPLETE)
+                        else if (neededState == SERVER_FINISHED_COMPLETE) {
                             if (!ssl->options.resuming)
                                 neededState = SERVER_HELLODONE_COMPLETE;
+                        } else {
+                          /* Added by Floris */
+                          CYASSL_MSG("HELLO_AGAIN_REPLY while else");
+                          /*fprintf(stderr, "%d %d\n", ssl->options.serverState, neededState);*/
+
+                          // Floris: we need to wait for
+                          // SERVER_HELLODONE_COMPLETE, so return -500
+                          if (ssl->options.serverState < neededState)
+                            return -500;
+                          else
+                            break;
+
+                          /* End of addition */
+				                	//break;
+				                }
                     }
                 }
             #endif
@@ -4101,6 +4129,7 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             CYASSL_MSG("connect state: FIRST_REPLY_DONE");
 
         case FIRST_REPLY_DONE :
+        		CYASSL_MSG("case FIRST_REPLY_DONE");
             #ifndef NO_CERTS
                 if (ssl->options.sendVerify) {
                     if ( (ssl->error = SendCertificate(ssl)) != 0) {
@@ -4113,8 +4142,20 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             #endif
             ssl->options.connectState = FIRST_REPLY_FIRST;
             CYASSL_MSG("connect state: FIRST_REPLY_FIRST");
+            //return -500; // Floris: allow time for the server to reply...
 
         case FIRST_REPLY_FIRST :
+	    CYASSL_MSG("connect state: FIRST_REPLY_DONE");
+      // Floris: we should somehow delay the CKE after the SHD?
+      /*if (ssl->options.serverState < SERVER_HELLODONE_COMPLETE) {
+        CYASSL_MSG("FLORIS: delaying ClientKeyExchange untill Server Hello Down received");
+        printf("serverState = %d < SERVERHELLO_DONE=%d\n", ssl->options.serverState, SERVER_HELLODONE_COMPLETE);
+        return -500;
+      }*/
+      /* Floris: group messages so that tinydtls can receive all of them ... */
+       if  (ssl != NULL)
+        //ssl->options.groupMessages = 1;
+
             if (!ssl->options.resuming) {
                 if ( (ssl->error = SendClientKeyExchange(ssl)) != 0) {
                     CYASSL_ERROR(ssl->error);
@@ -4125,8 +4166,10 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
 
             ssl->options.connectState = FIRST_REPLY_SECOND;
             CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
+	    //return -500;
 
         case FIRST_REPLY_SECOND :
+            CYASSL_MSG("connect state: FIRST_REPLY_SECOND");
             #ifndef NO_CERTS
                 if (ssl->options.sendVerify) {
                     if ( (ssl->error = SendCertificateVerify(ssl)) != 0) {
@@ -4140,6 +4183,7 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             CYASSL_MSG("connect state: FIRST_REPLY_THIRD");
 
         case FIRST_REPLY_THIRD :
+        		CYASSL_MSG("connect state: FIRST_REPLY_THIRD");
             if ( (ssl->error = SendChangeCipher(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
@@ -4147,8 +4191,10 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             CYASSL_MSG("sent: change cipher spec");
             ssl->options.connectState = FIRST_REPLY_FOURTH;
             CYASSL_MSG("connect state: FIRST_REPLY_FOURTH");
+	    //return -400;
 
         case FIRST_REPLY_FOURTH :
+            CYASSL_MSG("connect state: FIRST_REPLY_FOURTH");
             if ( (ssl->error = SendFinished(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
@@ -4156,14 +4202,40 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             CYASSL_MSG("sent: finished");
             ssl->options.connectState = FINISHED_DONE;
             CYASSL_MSG("connect state: FINISHED_DONE");
+            return -500;
+
+//        case FINISHED_DONE :
+//            /* get response */
+//            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE)
+//                if ( (ssl->error = ProcessReply(ssl)) < 0) {
+//                    CYASSL_ERROR(ssl->error);
+//                    return SSL_FATAL_ERROR;
+//                }
+//          
+//            ssl->options.connectState = SECOND_REPLY_DONE;
+//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
 
         case FINISHED_DONE :
             /* get response */
-            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE)
-                if ( (ssl->error = ProcessReply(ssl)) < 0) {
+            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE) {
+                int err = ssl->error = ProcessReply(ssl);  
+                if ( err < 0) {
                     CYASSL_ERROR(ssl->error);
                     return SSL_FATAL_ERROR;
+                } else if(err == 0) {
+                  if (ssl->options.serverState < SERVER_FINISHED_COMPLETE) {
+                    /*printf("FINISHED_DONE: err == 0; return -500\n");
+                    printf("%d < %d\n", ssl->options.serverState, SERVER_FINISHED_COMPLETE);*/
+                      return -500;
+                  } else {
+                    break; // break from while loop (i.e. we received both server's CCS and finished messages
+                  }
+                } else {
+                  /*printf("FINISHED_DONE: err > 0; BREAK don't know what to do...\n");
+                  printf("%d < %d\n", ssl->options.serverState, SERVER_FINISHED_COMPLETE);*/
+                  break;
                 }
+            }
           
             ssl->options.connectState = SECOND_REPLY_DONE;
             CYASSL_MSG("connect state: SECOND_REPLY_DONE");
@@ -4171,7 +4243,48 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
         case SECOND_REPLY_DONE:
             FreeHandshakeResources(ssl);
             CYASSL_LEAVE("SSL_connect()", SSL_SUCCESS);
+            CYASSL_MSG("HANDSHAKE COMPLETED SUCCESSFULLY");
             return SSL_SUCCESS;
+// Tom added a new state here, might give errors. Removing and seeing what
+// happens...
+//        case FINISHED_DONE :
+//            CYASSL_MSG("connect state: FINISHED_DONE");
+//            /* get response */
+//            while (ssl->options.serverState < SERVER_FINISHED_COMPLETE) {
+//		int err = ssl->error = ProcessReply(ssl);             
+//		if ( (err) < 0) {
+//                    CYASSL_ERROR(ssl->error);
+//                    return SSL_FATAL_ERROR;
+//                } else if (err == 0){
+//			if (ssl->options.connectState != 31) { // Tom extra state
+//		                ssl->options.connectState = 31; 
+//		            	return -500;
+//			} else {
+//				break;
+//			}
+//                }
+//            }
+//            ssl->options.connectState = SECOND_REPLY_DONE;
+//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//	case 31: // extra state Tom
+//	    while (ssl->options.serverState < SERVER_FINISHED_COMPLETE) {
+//		int err = ssl->error = ProcessReply(ssl);             
+//		if ( (err) < 0) {
+//		    CYASSL_ERROR(ssl->error);
+//		    return SSL_FATAL_ERROR;
+//		} else if (err == 0){
+//			break;
+//		}
+//            }
+//            ssl->options.connectState = SECOND_REPLY_DONE;
+//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//
+//        case SECOND_REPLY_DONE:
+//            CYASSL_MSG("connect state: SECOND_REPLY_DONE");
+//            FreeHandshakeResources(ssl);
+//            CYASSL_LEAVE("SSL_connect()", SSL_SUCCESS);
+//	    CYASSL_MSG("HANDSHAKE COMPLETED SUCCESSFULLY");
+//            return SSL_SUCCESS;
 
         default:
             CYASSL_MSG("Unknown connect state ERROR");
@@ -4232,9 +4345,9 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
 
     int CyaSSL_accept(CYASSL* ssl)
     {
+    		CYASSL_ENTER("SSL_accept()");
         byte havePSK = 0;
-        CYASSL_ENTER("SSL_accept()");
-
+        
         #ifdef HAVE_ERRNO_H 
             errno = 0;
         #endif
@@ -4288,12 +4401,14 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
         #endif
 
         if (ssl->buffers.outputBuffer.length > 0) {
+        		
             if ( (ssl->error = SendBuffered(ssl)) == 0) {
                 ssl->options.acceptState++;
-                CYASSL_MSG("accept state: Advanced from buffered send");
+                CYASSL_MSG("CyaSSL_accept accept state: Advanced from buffered send");
             }
             else {
                 CYASSL_ERROR(ssl->error);
+                CYASSL_MSG("CyaSSL_accept ssl->error = SendBuffered(ssl)) == 0");
                 return SSL_FATAL_ERROR;
             }
         }
@@ -4320,7 +4435,8 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             #endif
             ssl->options.acceptState = HELLO_VERIFY_SENT;
             CYASSL_MSG("accept state HELLO_VERIFY_SENT");
-
+						return -500;
+						
         case HELLO_VERIFY_SENT:
             #ifdef CYASSL_DTLS
                 if (ssl->options.dtls) {
@@ -4356,7 +4472,8 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             }
             ssl->options.acceptState = SERVER_HELLO_SENT;
             CYASSL_MSG("accept state SERVER_HELLO_SENT");
-
+						//return -500;
+						
         case SERVER_HELLO_SENT :
             #ifndef NO_CERTS
                 if (!ssl->options.resuming) 
@@ -4367,6 +4484,8 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             #endif
             ssl->options.acceptState = CERT_SENT;
             CYASSL_MSG("accept state CERT_SENT");
+            //return -500;
+						
 
         case CERT_SENT :
             if (!ssl->options.resuming) 
@@ -4376,6 +4495,8 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
                 }
             ssl->options.acceptState = KEY_EXCHANGE_SENT;
             CYASSL_MSG("accept state KEY_EXCHANGE_SENT");
+            //return -500;
+						
 
         case KEY_EXCHANGE_SENT :
             #ifndef NO_CERTS
@@ -4388,6 +4509,8 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             #endif
             ssl->options.acceptState = CERT_REQ_SENT;
             CYASSL_MSG("accept state CERT_REQ_SENT");
+            //return -500;
+						
 
         case CERT_REQ_SENT :
             if (!ssl->options.resuming) 
@@ -4397,14 +4520,26 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
                 }
             ssl->options.acceptState = SERVER_HELLO_DONE;
             CYASSL_MSG("accept state SERVER_HELLO_DONE");
+            return -500;
+						
 
         case SERVER_HELLO_DONE :
             if (!ssl->options.resuming) {
-                while (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)
+                while (ssl->options.clientState < CLIENT_FINISHED_COMPLETE) {
+                  /*printf("acceptState = %d (SERVER_HELLO_DONE), clientState < CLIENT_FINISHED_COMPLETE: %d < %d\n", ssl->options.acceptState, ssl->options.clientState, CLIENT_FINISHED_COMPLETE);*/
                     if ( (ssl->error = ProcessReply(ssl)) < 0) {
                         CYASSL_ERROR(ssl->error);
                         return SSL_FATAL_ERROR;
+                    } else { // return control to Click (i.e. return -500) to transfer a new incoming packet from Click to CyaSSL
+                      // only return control to Click if we need a new packet (i.e. when CLIENT_FINISHED hasn't been received yet)
+                      // in the other case (i.e. CLIENT_FINISHED has been received and processed by CyaSSL) CyaSSL should continue and send its ChangeCipherSpec
+                      if (ssl->options.clientState < CLIENT_FINISHED_COMPLETE)  {
+                        CYASSL_MSG("CyaSSL_accept (SERVER_HELLO_DONE): returning -500");
+                        /*printf("acceptState = %d (SERVER_HELLO_DONE), clientState < CLIENT_FINISHED_COMPLETE: %d < %d\n", ssl->options.acceptState, ssl->options.clientState, CLIENT_FINISHED_COMPLETE);*/
+                        return -500;
+                      }
                     }
+                }
             }
             ssl->options.acceptState = ACCEPT_SECOND_REPLY_DONE;
             CYASSL_MSG("accept state  ACCEPT_SECOND_REPLY_DONE");
@@ -4416,15 +4551,20 @@ int CyaSSL_dtls_got_timeout(CYASSL* ssl)
             }
             ssl->options.acceptState = CHANGE_CIPHER_SENT;
             CYASSL_MSG("accept state  CHANGE_CIPHER_SENT");
+        //    return -500;
+						
 
-        case CHANGE_CIPHER_SENT : 
+        //case CHANGE_CIPHER_SENT : 
+        		CYASSL_MSG("+++ TRYING TO SENT FINISHED MSG");
             if ( (ssl->error = SendFinished(ssl)) != 0) {
                 CYASSL_ERROR(ssl->error);
                 return SSL_FATAL_ERROR;
             }
-
+						CYASSL_MSG("+++ SENT FINISHED MSG");
             ssl->options.acceptState = ACCEPT_FINISHED_DONE;
             CYASSL_MSG("accept state ACCEPT_FINISHED_DONE");
+            return -500;
+						
 
         case ACCEPT_FINISHED_DONE :
             if (ssl->options.resuming)
@@ -5518,6 +5658,11 @@ int CyaSSL_set_compression(CYASSL* ssl)
                    ssl->options.side);
     }
 #endif
+
+    int CyaSSL_get_server_state(CYASSL* ssl)
+    {
+      return ssl->options.serverState;
+    }
 
     /* return true if connection established */
     int CyaSSL_is_init_finished(CYASSL* ssl)

@@ -278,7 +278,7 @@ enum {
 #elif defined(USE_FAST_MATH) && defined(SIZEOF_LONG_LONG) && (SIZEOF_LONG_LONG == 4)
     CTC_SETTINGS = 0x40
 #else
-    #error "bad math long / long long settings"
+    #warning "bad math long / long long settings"
 #endif
 };
 

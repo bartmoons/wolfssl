@@ -1908,6 +1908,7 @@ void DtlsPoolReset(CYASSL* ssl)
 
 int DtlsPoolTimeout(CYASSL* ssl)
 {
+  CYASSL_ENTER("DtlsPoolTimeout");
     int result = -1;
     if (ssl->dtls_timeout <  ssl->dtls_timeout_max) {
         ssl->dtls_timeout *= DTLS_TIMEOUT_MULTIPLIER;
@@ -1919,6 +1920,7 @@ int DtlsPoolTimeout(CYASSL* ssl)
 
 int DtlsPoolSend(CYASSL* ssl)
 {
+  CYASSL_ENTER("DtlsPoolSend");
     int ret;
     DtlsPool *pool = ssl->dtls_pool;
 
@@ -2669,6 +2671,7 @@ static int GetRecordHeader(CYASSL* ssl, const byte* input, word32* inOutIdx,
     }
 
     /* catch version mismatch */
+
     if (rh->pvMajor != ssl->version.major || rh->pvMinor != ssl->version.minor){
         if (ssl->options.side == CYASSL_SERVER_END &&
             ssl->options.acceptState == ACCEPT_BEGIN)
@@ -2713,6 +2716,7 @@ static int GetRecordHeader(CYASSL* ssl, const byte* input, word32* inOutIdx,
 #endif
 
     /* verify record type here as well */
+	
     switch ((enum ContentType)rh->type) {
         case handshake:
         case change_cipher_spec:
@@ -3596,6 +3600,7 @@ static int DoHandShakeMsgType(CYASSL* ssl, byte* input, word32* inOutIdx,
                 AddLateName("ServerHelloDone", &ssl->timeoutInfo);
         #endif
         ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
+        CYASSL_MSG("ssl->options.serverState = SERVER_HELLODONE_COMPLETE");
         break;
 
     case finished:
@@ -4424,16 +4429,18 @@ static int DoAlert(CYASSL* ssl, byte* input, word32* inOutIdx, int* type)
             AddPacketInfo("Alert", &ssl->timeoutInfo, input + *inOutIdx -
                           RECORD_HEADER_SZ, 2 + RECORD_HEADER_SZ, ssl->heap);
     #endif
+
     level = input[(*inOutIdx)++];
     code  = (int)input[(*inOutIdx)++];
+
     ssl->alert_history.last_rx.code = code;
     ssl->alert_history.last_rx.level = level;
     *type = code;
+
     if (level == alert_fatal) {
         ssl->options.isClosed = 1;  /* Don't send close_notify */
     }
 
-    CYASSL_MSG("Got alert");
     if (*type == close_notify) {
         CYASSL_MSG("    close notify");
         ssl->options.closeNotify = 1;
@@ -4826,6 +4833,7 @@ int ProcessReply(CYASSL* ssl)
                             if ( (ret = InitStreams(ssl)) != 0)
                                 return ret;
                     #endif
+                    CYASSL_MSG("start building finished msg");
                     if (ssl->options.resuming && ssl->options.side ==
                                                               CYASSL_CLIENT_END)
                         BuildFinished(ssl, &ssl->verifyHashes, server);
@@ -4853,11 +4861,13 @@ int ProcessReply(CYASSL* ssl)
                         return FATAL_ERROR;
                     else if (ret < 0)
                         return ret;
-
+											
                     /* catch warnings that are handled as errors */
-                    if (type == close_notify)
+                    if (type == close_notify) {
+												CYASSL_MSG("got CloseNotify message!");
                         return ssl->error = ZERO_RETURN;
-                           
+                    }
+
                     if (type == decrypt_error)
                         return FATAL_ERROR;
                     break;
@@ -4868,6 +4878,12 @@ int ProcessReply(CYASSL* ssl)
             }
 
             ssl->options.processReply = doProcessInit;
+
+    // Tom
+		if (ssl->options.connectState == 31 && ssl->curRL.type == handshake) {
+		  CYASSL_MSG("RETURN 0");	
+		  return 0; // handshake completed
+		}		
 
             /* input exhausted? */
             if (ssl->buffers.inputBuffer.idx == ssl->buffers.inputBuffer.length)
@@ -7215,6 +7231,7 @@ static void PickHashSigAlgo(CYASSL* ssl,
         }
 
         ssl->options.serverState = SERVER_HELLO_COMPLETE;
+        CYASSL_MSG("DoServerHello() set serverState to SERVER_HELLO_COMPLETE"); // Floris
 
         if (ssl->options.resuming) {
             if (ssl->options.haveSessionId && XMEMCMP(ssl->arrays->sessionID,
@@ -7233,6 +7250,7 @@ static void PickHashSigAlgo(CYASSL* ssl,
                             if (!ssl->options.tls)
                                 ret = DeriveKeys(ssl);
                     #endif
+                    CYASSL_MSG("DoServerHello() set serverState to SERVER_HELLODONE_COMPLETE"); // Floris
                     ssl->options.serverState = SERVER_HELLODONE_COMPLETE;
                     return ret;
                 }
