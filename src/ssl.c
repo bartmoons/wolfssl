@@ -344,6 +344,23 @@ int wolfSSL_dtls_get_peer(WOLFSSL* ssl, void* peer, unsigned int* peerSz)
     return SSL_NOT_IMPLEMENTED;
 #endif
 }
+
+int  wolfSSL_dtls_session_set_identifier(WOLFSSL* ssl, char* identifier, unsigned int identifierLength)
+{
+  ssl->sessionIdentifier = identifier;
+  ssl->sessionIdentifierLength = identifierLength;
+
+  return SSL_SUCCESS;
+}
+
+int  wolfSSL_dtls_session_get_identifier(WOLFSSL* ssl, char** identifier, unsigned int* identifierLength)
+{
+  *identifier = ssl->sessionIdentifier;
+  *identifierLength = ssl->sessionIdentifierLength;
+
+  return SSL_SUCCESS;
+}
+
 #endif /* WOLFSSL_LEANPSK */
 
 
