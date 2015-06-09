@@ -345,17 +345,17 @@ int wolfSSL_dtls_get_peer(WOLFSSL* ssl, void* peer, unsigned int* peerSz)
 #endif
 }
 
-int  wolfSSL_dtls_session_set_identifier(WOLFSSL* ssl, char* identifier, unsigned int identifierLength)
+int wolfSSL_dtls_session_set_identifier(WOLFSSL* ssl, const char* identifier, unsigned int identifierLength)
 {
-  ssl->sessionIdentifier = identifier;
+  memcpy(ssl->sessionIdentifier, identifier, (identifierLength < 100) ? identifierLength : 100);
   ssl->sessionIdentifierLength = identifierLength;
 
   return SSL_SUCCESS;
 }
 
-int  wolfSSL_dtls_session_get_identifier(WOLFSSL* ssl, char** identifier, unsigned int* identifierLength)
+int wolfSSL_dtls_session_get_identifier(WOLFSSL* ssl, char* identifier, unsigned int* identifierLength)
 {
-  *identifier = ssl->sessionIdentifier;
+  memcpy(identifier, ssl->sessionIdentifier, ssl->sessionIdentifierLength);
   *identifierLength = ssl->sessionIdentifierLength;
 
   return SSL_SUCCESS;

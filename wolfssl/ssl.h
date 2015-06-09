@@ -333,8 +333,8 @@ WOLFSSL_API int  wolfSSL_dtls_get_peer(WOLFSSL*, void*, unsigned int*);
 
 /* Functions for getting and setting the session identifier from Click, memory
  * management is the task of Click */
-WOLFSSL_API int  wolfSSL_dtls_session_set_identifier(WOLFSSL*, char*, unsigned int);
-WOLFSSL_API int  wolfSSL_dtls_session_get_identifier(WOLFSSL*, char**, unsigned int*);
+WOLFSSL_API int  wolfSSL_dtls_session_set_identifier(WOLFSSL*, const char*, unsigned int);
+WOLFSSL_API int  wolfSSL_dtls_session_get_identifier(WOLFSSL*, char*, unsigned int*);
 
 WOLFSSL_API int   wolfSSL_ERR_GET_REASON(int err);
 WOLFSSL_API char* wolfSSL_ERR_error_string(unsigned long,char*);
