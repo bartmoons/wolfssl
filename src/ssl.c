@@ -6660,6 +6660,16 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         return ssl->arrays->client_identity;
     }
 
+    const char* wolfSSL_get_psk(const WOLFSSL* ssl, int* length)
+    {
+      WOLFSSL_ENTER("SSL_get_psk");
+
+      if (ssl == NULL || ssl->arrays == NULL)
+        return NULL;
+
+      *length = ssl->arrays->psk_keySz;
+      return (char*)ssl->arrays->psk_key;
+    }
 
     int wolfSSL_CTX_use_psk_identity_hint(WOLFSSL_CTX* ctx, const char* hint)
     {

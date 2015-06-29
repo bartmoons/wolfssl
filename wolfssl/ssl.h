@@ -720,6 +720,7 @@ enum { /* ssl Constants */
 
     WOLFSSL_API const char* wolfSSL_get_psk_identity_hint(const WOLFSSL*);
     WOLFSSL_API const char* wolfSSL_get_psk_identity(const WOLFSSL*);
+    WOLFSSL_API const char* wolfSSL_get_psk(const WOLFSSL*, int* length);
 
     WOLFSSL_API int wolfSSL_CTX_use_psk_identity_hint(WOLFSSL_CTX*, const char*);
     WOLFSSL_API int wolfSSL_use_psk_identity_hint(WOLFSSL*, const char*);
