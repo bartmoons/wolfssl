@@ -547,6 +547,22 @@ int wolfSSL_dtls_get_peer(WOLFSSL* ssl, void* peer, unsigned int* peerSz)
     return SSL_NOT_IMPLEMENTED;
 #endif
 }
+
+int wolfSSL_dtls_session_set_identifier(WOLFSSL* ssl, const char* identifier, unsigned int identifierLength)
+{
+  memcpy(ssl->sessionIdentifier, identifier, (identifierLength < 100) ? identifierLength : 100);
+  ssl->sessionIdentifierLength = identifierLength;
+
+  return SSL_SUCCESS;
+}
+
+int wolfSSL_dtls_session_get_identifier(WOLFSSL* ssl, char* identifier, unsigned int* identifierLength)
+{
+  memcpy(identifier, ssl->sessionIdentifier, ssl->sessionIdentifierLength);
+  *identifierLength = ssl->sessionIdentifierLength;
+
+  return SSL_SUCCESS;
+}
 #endif /* WOLFSSL_LEANPSK */
 
 
@@ -8489,6 +8505,16 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         return ssl->arrays->client_identity;
     }
 
+    const char* wolfSSL_get_psk(const WOLFSSL* ssl, int* length)
+    {
+      WOLFSSL_ENTER("SSL_get_psk");
+
+      if (ssl == NULL || ssl->arrays == NULL)
+        return NULL;
+
+      *length = ssl->arrays->psk_keySz;
+      return (char*)ssl->arrays->psk_key;
+    }
 
     int wolfSSL_CTX_use_psk_identity_hint(WOLFSSL_CTX* ctx, const char* hint)
     {

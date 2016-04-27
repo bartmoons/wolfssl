@@ -150,7 +150,8 @@ egs:
 	$(MAKE) examples/client/client; \
 	$(MAKE) examples/echoclient/echoclient;\
 	$(MAKE) examples/server/server; \
-	$(MAKE) examples/echoserver/echoserver;
+	$(MAKE) examples/echoserver/echoserver; \
+	$(MAKE) examples/selectserver/selectserver;
 
 wc_egs:
 	$(MAKE) wolfcrypt/test/testwolfcrypt; \

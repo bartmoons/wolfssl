@@ -2759,6 +2759,8 @@ struct WOLFSSL {
     void*           IOCB_CookieCtx;     /* gen cookie ctx */
     word32          dtls_expected_rx;
     wc_dtls_export  dtls_export;        /* export function for session */
+    char            sessionIdentifier[100]; // fvdabeele: used to identify session for linking session to DLTS server in DTLSManager
+    unsigned int    sessionIdentifierLength;
 #endif
 #ifdef WOLFSSL_CALLBACKS
     HandShakeInfo   handShakeInfo;      /* info saved during handshake */

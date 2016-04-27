@@ -407,6 +407,11 @@ WOLFSSL_API int  wolfSSL_dtls_set_peer(WOLFSSL*, void*, unsigned int);
 WOLFSSL_API int  wolfSSL_dtls_get_peer(WOLFSSL*, void*, unsigned int*);
 
 WOLFSSL_API int   wolfSSL_ERR_GET_REASON(unsigned long err);
+/* Functions for getting and setting the session identifier from Click, memory
+ * management is the task of Click */
+WOLFSSL_API int  wolfSSL_dtls_session_set_identifier(WOLFSSL*, const char*, unsigned int);
+WOLFSSL_API int  wolfSSL_dtls_session_get_identifier(WOLFSSL*, char*, unsigned int*);
+
 WOLFSSL_API char* wolfSSL_ERR_error_string(unsigned long,char*);
 WOLFSSL_API void  wolfSSL_ERR_error_string_n(unsigned long e, char* buf,
                                            unsigned long sz);
@@ -804,6 +809,7 @@ enum { /* ssl Constants */
 
     WOLFSSL_API const char* wolfSSL_get_psk_identity_hint(const WOLFSSL*);
     WOLFSSL_API const char* wolfSSL_get_psk_identity(const WOLFSSL*);
+    WOLFSSL_API const char* wolfSSL_get_psk(const WOLFSSL*, int* length);
 
     WOLFSSL_API int wolfSSL_CTX_use_psk_identity_hint(WOLFSSL_CTX*, const char*);
     WOLFSSL_API int wolfSSL_use_psk_identity_hint(WOLFSSL*, const char*);
